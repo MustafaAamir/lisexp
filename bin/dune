@@ -1,0 +1,4 @@
+(executable
+ (public_name sexp)
+ (name main)
+ (libraries sexp parsexp base core stdio))

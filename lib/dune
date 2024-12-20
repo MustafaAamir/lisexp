@@ -1,0 +1,4 @@
+(library
+ (name sexp)
+ (public_name sexp)
+ (libraries base core sexplib))
