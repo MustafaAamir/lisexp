@@ -6,11 +6,15 @@ type value =
   | Number of int
   | Float of float
   | Symbol of string
+  | Bool of bool
   | List of value list
   | Function of (value list -> value)
-  | Bool of bool
 
-(* Convert Sexp.t to our value type *)
+(* Environment to store variables and functions *)
+type ctx = (string, value) Hashtbl.t
+
+
+(* Convert Sexp.t to value *)
 let rec of_sexp = function
   | Sexp.Atom s -> begin
       match Int.of_string_opt s with
@@ -22,9 +26,6 @@ let rec of_sexp = function
            end
     end
  | Sexp.List xs -> List (List.map ~f:of_sexp xs)
-
-(* Environment to store variables and functions *)
-type ctx = (string, value) Hashtbl.t
 
 (* Create initial environment with basic operations *)
 let create_initial_env () =
@@ -39,12 +40,6 @@ let create_initial_env () =
       in
     Hashtbl.set ctx ~key:name ~data:(Function bin);
   in
-  add_primitive ("+") ( + ) ( +. );
-  add_primitive ("*") ( * ) ( *. );
-  add_primitive ("/") ( / ) ( /. );
-  add_primitive ("-") ( - ) ( -. );
-  add_primitive ("^") ( ** ) ( **. );
-
   let add_cmp name int_op float_op =
       let cmp = function
          | [ Float a; Float b ] -> Bool (float_op a b)
@@ -55,12 +50,22 @@ let create_initial_env () =
       in
     Hashtbl.set ctx ~key:name ~data:(Function cmp)
   in
-  add_cmp ("=") ( = ) ( fun (x: float) (y: float) -> x = y );
-
-
+  add_cmp ("=") ( Int.equal ) ( Float.equal );
+  add_cmp (">") ( Int.(>) ) ( Float.(>) );
+  add_cmp ("<") ( Int.(<) ) ( Float.(<) );
+  add_cmp ("<>") ( Int.(<>) ) ( Float.(<>) );
+  add_cmp (">=") ( Int.(>=) ) ( Float.(>=) );
+  add_cmp ("<=") ( Int.(<=) ) ( Float.(<=) );
+  add_primitive ("+") ( + ) ( +. );
+  add_primitive ("*") ( * ) ( *. );
+  add_primitive ("/") ( / ) ( /. );
+  add_primitive ("-") ( - ) ( -. );
+  add_primitive ("^") ( ** ) ( **. );
   ctx
 
-(* Evaluate a value in the given environment *)
+
+
+(* Evaluate a value in the given context *)
 let rec eval ctx = function
   | Number n -> Number n
   | Float n -> Float n
@@ -124,6 +129,7 @@ let rec string_of_value = function
 
 (* Read a complete s-expression, handling multi-line input *)
 let read_complete_expr () =
+  (* modify this because buggy *)
   let open_parens = ref 0 in
   let close_parens = ref 0 in
   let buffer = Buffer.create 256 in
@@ -163,7 +169,7 @@ let run_repl () =
         let trimmed = String.strip input in
         match trimmed with
         | "" -> loop ()
-        | ":quit" -> printf "Goodbye!\n"
+        | ":quit" -> printf ":wq!\n"
         | ":help" ->
             printf "\nAvailable commands:\n";
             printf "  :help  - Show this help message\n";
@@ -195,4 +201,3 @@ let run_repl () =
   in
   loop ()
 
-let () = run_repl ()
