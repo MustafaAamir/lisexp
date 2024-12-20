@@ -32,10 +32,10 @@ let create_initial_env () =
   let ctx = Hashtbl.create (module String) in
       let add_primitive name int_op float_op =
       let bin = function
-         | [ Float a; Float b ] -> Float (float_op a b)
+         | [ Float a; Float b ]   -> Float (float_op a b)
          | [ Number a; Number b ] -> Number (int_op a b)
-         | [ Number a; Float b ] -> Float (float_op (Float.of_int a) b)
-         | [ Float a; Number b ] -> Float(float_op a (Float.of_int b))
+         | [ Number a; Float b ]  -> Float (float_op (Float.of_int a) b)
+         | [ Float a; Number b ]  -> Float(float_op a (Float.of_int b))
          | _ -> raise (Invalid_argument ("Invalid arguments to " ^ name));
       in
     Hashtbl.set ctx ~key:name ~data:(Function bin);
@@ -123,6 +123,7 @@ let rec string_of_value = function
   | Float n -> Float.to_string n
   | Bool b -> Bool.to_string b
   | Symbol s -> s
+  (* implement cons dumbass *)
   | List vs ->
       "(" ^ String.concat ~sep:" " (List.map ~f:string_of_value vs) ^ ")"
   | Function _ -> "<function λ>"
@@ -154,6 +155,15 @@ let read_complete_expr () =
   in
   read_lines true
 
+let help = printf "\nAvailable commands:\n";
+            printf "  :help  - Show this help message\n";
+            printf "  :quit  - Exit the REPL\n";
+            printf "  :env   - Show current environment\n";
+            printf "\nExample expressions:\n";
+            printf "  (+ 1 2)\n";
+            printf "  (define x 42)\n";
+            printf "  (if (< 1 2) 10 20)\n\n";
+
 (* REPL main loop *)
 let run_repl () =
   let env = create_initial_env () in
@@ -170,16 +180,7 @@ let run_repl () =
         match trimmed with
         | "" -> loop ()
         | ":quit" -> printf ":wq!\n"
-        | ":help" ->
-            printf "\nAvailable commands:\n";
-            printf "  :help  - Show this help message\n";
-            printf "  :quit  - Exit the REPL\n";
-            printf "  :env   - Show current environment\n";
-            printf "\nExample expressions:\n";
-            printf "  (+ 1 2)\n";
-            printf "  (define x 42)\n";
-            printf "  (if (< 1 2) 10 20)\n\n";
-            loop ()
+        | ":help" -> help(); loop ()
         | ":env" ->
             printf "\nCurrent environment:\n";
             Hashtbl.iteri env ~f:(fun ~key ~data ->
