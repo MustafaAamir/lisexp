@@ -1,2 +1,4 @@
 (test
- (name test_sexp))
+ (name test_sexp)
+ (libraries sexp ounit2))
+
