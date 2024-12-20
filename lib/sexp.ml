@@ -31,8 +31,8 @@ let create_initial_env () =
   let ctx = Hashtbl.create (module String) in
       let add_primitive name int_op float_op =
       let bin = function
-         | [ Number a; Number b ] -> Number (int_op a b)
          | [ Float a; Float b ] -> Float (float_op a b)
+         | [ Number a; Number b ] -> Number (int_op a b)
          | [ Number a; Float b ] -> Float (float_op (Float.of_int a) b)
          | [ Float a; Number b ] -> Float(float_op a (Float.of_int b))
          | _ -> raise (Invalid_argument ("Invalid arguments to " ^ name));
@@ -45,11 +45,10 @@ let create_initial_env () =
   add_primitive ("-") ( - ) ( -. );
   add_primitive ("^") ( ** ) ( **. );
 
-  (*
   let add_cmp name int_op float_op =
       let cmp = function
-         | [ Number a; Number b ] -> Bool (int_op a b)
          | [ Float a; Float b ] -> Bool (float_op a b)
+         | [ Number a; Number b ] -> Bool (int_op a b)
          | [ Number a; Float b ] -> Bool (float_op (Float.of_int a) b)
          | [ Float a; Number b ] -> Bool (float_op a (Float.of_int b))
          | _ -> raise (Invalid_argument ("Invalid arguments to " ^ name));
@@ -57,7 +56,6 @@ let create_initial_env () =
     Hashtbl.set ctx ~key:name ~data:(Function cmp)
   in
   add_cmp ("=") ( = ) ( fun (x: float) (y: float) -> x = y );
-    *)
 
 
   ctx
