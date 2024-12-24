@@ -1,0 +1,1 @@
+define lamnda if cons car cdr list true false

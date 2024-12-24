@@ -15,6 +15,7 @@ depends: [
   "base"
   "core"
   "dune" {>= "3.17"}
+  "ocamlformat"
   "odoc" {with-doc}
 ]
 build: [

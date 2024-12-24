@@ -19,7 +19,7 @@
  (name sexp)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml sexplib base core dune)
+ (depends ocaml sexplib base core dune ocamlformat)
  (tags
   ("add topics" "to describe" your project)))
 

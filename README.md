@@ -1,7 +1,19 @@
 # lisexp
 A REPL Lisp evaluator using Jane-Street's S-Expression library in OCaml.
 
-# Grammar
+# Installation
+```bash
+git clone https://github.com/MustafaAamir/lisexp
+cd lisexp
+dune build
+# opam install parsexp sexplib core base dune
+sudo dnf install rlwrap
+rlwrap -f completion dune exec sexp
+```
+
+`rlwrap -f completion` is optional for auto-completion and a better repl experience
+
+### Grammar
 
 Operators:
 ```
