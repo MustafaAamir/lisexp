@@ -1,5 +1,5 @@
 open Base
-open Parsexp
+open Parser
 open Stdio
 
 type value =
@@ -11,14 +11,13 @@ type value =
   | List of value list
   | Function of (value list -> value)
 
-
 (* Environment to store variables and functions *)
 type ctx = (string, value) Hashtbl.t
 type signature = (string, string) Hashtbl.t
 
 (* Convert Sexp.t to value *)
 let rec of_sexp = function
-  | Sexp.Atom s -> (
+  | Atom s -> (
       match Int.of_string_opt s with
       | Some n -> Integer n
       | None -> (
@@ -28,19 +27,19 @@ let rec of_sexp = function
               match s with
               | "real" -> Bool true
               | "fake" -> Bool false
-              | _ ->
+              |  _ ->
                   if
                     String.length s > 2
-                    && Char.equal (String.get s 0) '\''
-                    && Char.equal (String.get s (String.length s - 1)) '\''
+                    && Char.equal (String.get s 0) '"'
+                    && Char.equal (String.get s (String.length s - 1)) '"'
                   then String (String.sub s ~pos:1 ~len:(String.length s - 2))
                   else Symbol s)))
-  | Sexp.List xs -> List (List.map ~f:of_sexp xs)
+  | SexpList xs -> List (List.map ~f:of_sexp xs)
 
 (* Create initial environment with basic operations *)
 let create_initial_env () =
   let ctx = Hashtbl.create (module String) in
-  let signature  = Hashtbl.create (module String) in
+  let signature = Hashtbl.create (module String) in
 
   (* type predicates *)
   let mk_tp checker =
@@ -50,16 +49,21 @@ let create_initial_env () =
       | _ -> "Type predicate expects 1 (one) argument" |> failwith)
   in
 
-  Hashtbl.set ctx ~key:"integer?" ~data:(mk_tp (function | Integer _ -> true | _ -> false));
-  Hashtbl.set signature ~key:"integer?" ~data:("'a -> bool");
-  Hashtbl.set ctx ~key:"float?" ~data:(mk_tp(function | Float _ -> true | _ -> false));
-  Hashtbl.set signature ~key:"float?" ~data:("'a -> bool");
-  Hashtbl.set ctx ~key:"symbol?" ~data:(mk_tp (function | Symbol _ -> true | _ -> false));
-  Hashtbl.set signature ~key:"symbol?" ~data:("'a -> bool");
-  Hashtbl.set ctx ~key:"string?" ~data:(mk_tp (function | String _ -> true | _ -> false));
-  Hashtbl.set signature ~key:"string?" ~data:("'a -> bool");
-  Hashtbl.set ctx ~key:"list?" ~data:(mk_tp (function | List _ -> true | _ -> false));
-  Hashtbl.set signature ~key:"list?" ~data:("'a -> bool");
+  Hashtbl.set ctx ~key:"integer?"
+    ~data:(mk_tp (function Integer _ -> true | _ -> false));
+  Hashtbl.set signature ~key:"integer?" ~data:"'a -> bool";
+  Hashtbl.set ctx ~key:"float?"
+    ~data:(mk_tp (function Float _ -> true | _ -> false));
+  Hashtbl.set signature ~key:"float?" ~data:"'a -> bool";
+  Hashtbl.set ctx ~key:"symbol?"
+    ~data:(mk_tp (function Symbol _ -> true | _ -> false));
+  Hashtbl.set signature ~key:"symbol?" ~data:"'a -> bool";
+  Hashtbl.set ctx ~key:"string?"
+    ~data:(mk_tp (function String _ -> true | _ -> false));
+  Hashtbl.set signature ~key:"string?" ~data:"'a -> bool";
+  Hashtbl.set ctx ~key:"list?"
+    ~data:(mk_tp (function List _ -> true | _ -> false));
+  Hashtbl.set signature ~key:"list?" ~data:"'a -> bool";
 
   let nil_pred = function
     | [ List [] ] -> Bool true
@@ -67,7 +71,7 @@ let create_initial_env () =
     | _ -> "'nil?' expects an argument of type list" |> failwith
   in
   Hashtbl.set ctx ~key:"nil?" ~data:(Function nil_pred);
-  Hashtbl.set signature ~key:"list?" ~data:("list 'a -> bool");
+  Hashtbl.set signature ~key:"list?" ~data:"list 'a -> bool";
 
   let add_primitive name int_op float_op =
     let bin = function
@@ -78,7 +82,12 @@ let create_initial_env () =
       | _ -> Invalid_argument ("Invalid arguments to " ^ name) |> raise
     in
     Hashtbl.set ctx ~key:name ~data:(Function bin);
-    Hashtbl.set signature ~key:name ~data:("integer -> integer -> integer\nfloat -> float -> float\ninteger -> float -> float\nfloat -> integer -> float");
+    Hashtbl.set signature ~key:name
+      ~data:
+        "integer -> integer -> integer\n\
+         float -> float -> float\n\
+         integer -> float -> float\n\
+         float -> integer -> float"
   in
   let add_cmp name int_op float_op =
     let cmp = function
@@ -89,7 +98,12 @@ let create_initial_env () =
       | _ -> Invalid_argument ("Invalid arguments to " ^ name) |> raise
     in
     Hashtbl.set ctx ~key:name ~data:(Function cmp);
-    Hashtbl.set signature ~key:name ~data:("integer -> integer -> bool\nfloat -> float -> bool\ninteger -> float -> bool\nfloat -> integer -> bool");
+    Hashtbl.set signature ~key:name
+      ~data:
+        "integer -> integer -> bool\n\
+         float -> float -> bool\n\
+         integer -> float -> bool\n\
+         float -> integer -> bool"
   in
   let add_cmp_bool name int_op float_op bool_op =
     let cmp = function
@@ -101,7 +115,13 @@ let create_initial_env () =
       | _ -> Invalid_argument ("Invalid arguments to " ^ name) |> raise
     in
     Hashtbl.set ctx ~key:name ~data:(Function cmp);
-    Hashtbl.set signature ~key:name ~data:("integer -> integer -> bool\nfloat -> float -> bool\ninteger -> float -> bool\nfloat -> integer -> bool\nbool -> bool -> bool");
+    Hashtbl.set signature ~key:name
+      ~data:
+        "integer -> integer -> bool\n\
+         float -> float -> bool\n\
+         integer -> float -> bool\n\
+         float -> integer -> bool\n\
+         bool -> bool -> bool"
   in
 
   add_cmp ">" Int.( > ) Float.( > );
@@ -130,38 +150,41 @@ let create_initial_env () =
     | _ -> "Invalid argument to car" |> failwith
   in
   Hashtbl.set ctx ~key:"car" ~data:(Function car_op);
-  Hashtbl.set signature ~key:"car" ~data:("list 'a -> 'a");
+  Hashtbl.set signature ~key:"car" ~data:"list 'a -> 'a";
   let cdr_op = function
     | [ List (_ :: xs) ] -> List xs
     | [ List [] ] -> "cdr being applied to an empty List " |> failwith
     | _ -> "Invalid Argument to cdr" |> failwith
   in
   Hashtbl.set ctx ~key:"cdr" ~data:(Function cdr_op);
-  Hashtbl.set signature ~key:"cdr" ~data:("list 'a -> 'a");
+  Hashtbl.set signature ~key:"cdr" ~data:"list 'a -> 'a";
   let append_op = function
     | [ List y'; List x' ] -> List (List.append x' y')
-    | [  y'; List x' ] -> List (x' @ [ y' ])
+    | [ y'; List x' ] -> List (x' @ [ y' ])
     | _ ->
-        "append (&) expects two arguments (List, List) or (List, value)" |> failwith
+        "append (&) expects two arguments (List, List) or (List, value)"
+        |> failwith
   in
   Hashtbl.set ctx ~key:"append" ~data:(Function append_op);
-  Hashtbl.set signature ~key:"append" ~data:("list 'a -> list 'a -> list 'a\n'a -> list 'a -> list 'a");
+  Hashtbl.set signature ~key:"append"
+    ~data:"list 'a -> list 'a -> list 'a\n'a -> list 'a -> list 'a";
   Hashtbl.set ctx ~key:"&" ~data:(Function append_op);
-  Hashtbl.set signature ~key:"&" ~data:("list 'a -> list 'a -> list 'a\n'a -> list 'a -> list 'a");
+  Hashtbl.set signature ~key:"&"
+    ~data:"list 'a -> list 'a -> list 'a\n'a -> list 'a -> list 'a";
 
   let length_op = function
     | [ List x' ] -> Integer (List.length x')
     | _ -> "Length expects an argument of type List" |> failwith
   in
   Hashtbl.set ctx ~key:"length" ~data:(Function length_op);
-  Hashtbl.set signature ~key:"length" ~data:("list 'a -> integer");
+  Hashtbl.set signature ~key:"length" ~data:"list 'a -> integer";
 
   let map_op = function
     | [ Function f; List x' ] -> List (List.map ~f:(fun x -> f [ x ]) x')
     | _ -> "Map expects 2 arguments of type (function λ, list)" |> failwith
   in
   Hashtbl.set ctx ~key:"map" ~data:(Function map_op);
-  Hashtbl.set signature ~key:"map" ~data:("('a -> 'a) -> list 'a -> list 'a");
+  Hashtbl.set signature ~key:"map" ~data:"('a -> 'a) -> list 'a -> list 'a";
 
   let filter_op = function
     | [ Function f; List x' ] ->
@@ -170,7 +193,7 @@ let create_initial_env () =
     | _ -> "Filter expects 2 argumetns of type (function λ, list)" |> failwith
   in
   Hashtbl.set ctx ~key:"filter" ~data:(Function filter_op);
-  Hashtbl.set signature ~key:"filer" ~data:("('a -> 'a) -> list 'a -> list 'a");
+  Hashtbl.set signature ~key:"filer" ~data:"('a -> 'a) -> list 'a -> list 'a";
 
   let foldl_op = function
     | [ init; List x'; Function f ] ->
@@ -178,7 +201,7 @@ let create_initial_env () =
     | _ -> "Incorrect usage of foldl: foldl <acc> <list> <function>" |> failwith
   in
   Hashtbl.set ctx ~key:"foldl" ~data:(Function foldl_op);
-  Hashtbl.set signature ~key:"foldl" ~data:("'a -> list 'a -> ('a -> 'a) -> 'a");
+  Hashtbl.set signature ~key:"foldl" ~data:"'a -> list 'a -> ('a -> 'a) -> 'a";
 
   let foldr_op = function
     | [ List x'; init; Function f ] ->
@@ -186,54 +209,67 @@ let create_initial_env () =
     | _ -> "Incorrect usage of foldr: foldl <list> <acc> <function>" |> failwith
   in
   Hashtbl.set ctx ~key:"foldr" ~data:(Function foldr_op);
-  Hashtbl.set signature ~key:"foldr" ~data:("list 'a -> 'a -> ('a -> 'a) -> 'a");
-
+  Hashtbl.set signature ~key:"foldr" ~data:"list 'a -> 'a -> ('a -> 'a) -> 'a";
 
   let sort_asc = function
-    | [List x'] -> List (List.sort x' ~compare:Stdlib.compare)
-    | _ -> "Incorrect usage of sort_asc: Only accepts arguments of type List"  |> failwith
+    | [ List x' ] -> List (List.sort x' ~compare:Stdlib.compare)
+    | _ ->
+        "Incorrect usage of sort_asc: Only accepts arguments of type List"
+        |> failwith
   in
   Hashtbl.set ctx ~key:"sort_asc" ~data:(Function sort_asc);
-  Hashtbl.set signature ~key:"sort_asc" ~data:("list 'a -> list 'a");
+  Hashtbl.set signature ~key:"sort_asc" ~data:"list 'a -> list 'a";
 
   let sort_desc = function
-    | [List x'] -> List (List.rev (List.sort x' ~compare:Stdlib.compare))
-    | _ -> "Incorrect usage of sort_desc: Only accepts arguments of type List"  |> failwith
+    | [ List x' ] -> List (List.rev (List.sort x' ~compare:Stdlib.compare))
+    | _ ->
+        "Incorrect usage of sort_desc: Only accepts arguments of type List"
+        |> failwith
   in
   Hashtbl.set ctx ~key:"sort_desc" ~data:(Function sort_desc);
-  Hashtbl.set signature ~key:"sort_desc" ~data:("list 'a -> list 'a");
+  Hashtbl.set signature ~key:"sort_desc" ~data:"list 'a -> list 'a";
 
   let getn = function
-    | [Integer n; List x'] -> begin
+    | [ Integer n; List x' ] -> (
         match List.nth x' n with
         | Some x -> x
-        | None -> "Invalid n value '" ^ Stdlib.string_of_int n  ^ "' for 'get n <list>'. Maximum bound for list is '" ^ Stdlib.string_of_int(List.length(x') - 1) ^ "'" |> failwith
-      end
+        | None ->
+            "Invalid n value '" ^ Stdlib.string_of_int n
+            ^ "' for 'get n <list>'. Maximum bound for list is '"
+            ^ Stdlib.string_of_int (List.length x' - 1)
+            ^ "'"
+            |> failwith)
     | _ -> "Invalid argument(s) to get n <list>" |> failwith
   in
   Hashtbl.set ctx ~key:"get" ~data:(Function getn);
-  Hashtbl.set signature ~key:"get" ~data:("integer a -> list 'a -> 'a");
+  Hashtbl.set signature ~key:"get" ~data:"integer a -> list 'a -> 'a";
 
   let setn = function
-    | [Integer n; List x'; v] when List.length x' > n -> begin
-        let replace l pos a  = List.mapi l ~f:(fun i x -> if i = pos then a else x) in
+    | [ Integer n; List x'; v ] when List.length x' > n ->
+        let replace l pos a =
+          List.mapi l ~f:(fun i x -> if i = pos then a else x)
+        in
         List (replace x' n v)
-      end
-   | [Integer n; List x'; _] -> "Invalid n value '" ^ Stdlib.string_of_int n  ^ "' for 'set n <list> <value>'. Maximum bound for list is '" ^ Stdlib.string_of_int(List.length(x') - 1) ^ "'" |> failwith
+    | [ Integer n; List x'; _ ] ->
+        "Invalid n value '" ^ Stdlib.string_of_int n
+        ^ "' for 'set n <list> <value>'. Maximum bound for list is '"
+        ^ Stdlib.string_of_int (List.length x' - 1)
+        ^ "'"
+        |> failwith
     | _ -> "Invalid argument(s) to get n <list>" |> failwith
   in
   Hashtbl.set ctx ~key:"set" ~data:(Function setn);
-  Hashtbl.set signature ~key:"set" ~data:("integer a -> list 'a -> 'a -> list 'a");
+  Hashtbl.set signature ~key:"set" ~data:"integer a -> list 'a -> 'a -> list 'a";
 
   let list_constructor args = List args in
   (* signature ? *)
   Hashtbl.set ctx ~key:"list" ~data:(Function list_constructor);
-  Hashtbl.set signature ~key:"list" ~data:("list 'a -> list 'a");
+  Hashtbl.set signature ~key:"list" ~data:"list 'a -> list 'a";
   Hashtbl.set ctx ~key:"@" ~data:(Function list_constructor);
-  Hashtbl.set signature ~key:"@" ~data:("list 'a -> list 'a");
+  Hashtbl.set signature ~key:"@" ~data:"list 'a -> list 'a";
 
   Hashtbl.set ctx ~key:"nil" ~data:(List []);
-  Hashtbl.set signature ~key:"nil" ~data:("empty list 'a");
+  Hashtbl.set signature ~key:"nil" ~data:"empty list 'a";
   (ctx, signature)
 
 (* Evaluate a value in the given context *)
@@ -282,9 +318,10 @@ let rec eval ctx = function
 
 (* Parse and evaluate a string *)
 let eval_string ctx str =
-  match Single.parse_string str with
-  | Ok sexp -> eval ctx (of_sexp sexp)
-  | Error err -> "Parse error: " ^ Parsexp.Parse_error.message err |> failwith
+  let tokens = tokenize str in
+  let s_exp = s_expression_of_token_list tokens in
+  let values = of_sexp s_exp in
+  eval ctx values
 
 (* Pretty printer for Lisp values *)
 let rec string_of_value = function
@@ -345,13 +382,13 @@ let run_repl () =
             printf "\navailable commands:\n";
             printf "  :help  - show this help message\n";
             printf "  :wq - exit the repl\n";
-            printf
-              "  :env (optional enviroment variable)  - show current environment\n";
+            printf "  :env (optional enviroment variable)  - show current environment\n";
+            printf "  :signature (optional variable)  - show current signature\n";
             printf "\nexample expressions:\n";
             printf "  (+ 1 2)\n";
             printf "  (define x 42)\n";
             printf "  (if (< 1 2) 10 20)\n";
-            printf "  (define incr (lambda (x) (+ x 1)))\n\n";
+            printf "  (define incr ($ (x) (+ x 1)))\n\n";
             loop ()
         | ":env" ->
             printf "\nCurrent environment:\n";
@@ -365,22 +402,20 @@ let run_repl () =
                 printf "\ntype signature(s) for '%s': \n%s\n" key data);
             printf "\n";
             loop ()
-        | input when String.equal (String.sub input ~pos:0 ~len:5) (":env ") ->
+        | input when (String.length input > 5) && String.equal (String.sub input ~pos:0 ~len:5) ":env " ->
             let key = String.sub input ~pos:5 ~len:(String.length input - 5) in
-            begin
-                match Hashtbl.find env key with
-                | Some v -> printf "%s: %s\n" key (string_of_value v)
-                | None -> printf "'%s' not found in env\n" key
-            end;
-            loop()
-        | input when String.equal (String.sub input ~pos:0 ~len:11) (":signature ") ->
-            let key = String.sub input ~pos:11 ~len:(String.length input - 11) in
-            begin
-                match Hashtbl.find signature key with
-                | Some v -> printf "type signature(s) for '%s': \n%s\n" key v
-                | None -> printf "'%s' not found in env\n" key
-            end;
-            loop()
+            (match Hashtbl.find env key with
+            | Some v -> printf "%s: %s\n" key (string_of_value v)
+            | None -> printf "'%s' not found in env\n" key);
+            loop ()
+        | input when (String.length input > 11) && (String.equal (String.sub input ~pos:0 ~len:11)) ":signature " ->
+            let key =
+              String.sub input ~pos:11 ~len:(String.length input - 11)
+            in
+            (match Hashtbl.find signature key with
+            | Some v -> printf "type signature(s) for '%s': \n%s\n" key v
+            | None -> printf "'%s' not found in env\n" key);
+            loop ()
         | _ -> (
             try
               let result = eval_string env trimmed in

@@ -1,3 +1,3 @@
-open Sexp
+open Lisp
 
 let () = run_repl ()

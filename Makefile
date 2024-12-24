@@ -1,2 +1,2 @@
 all:
-	rlwrap --no-children -f completion dune exec sexp
+	rlwrap --no-children -f completion dune exec lisp

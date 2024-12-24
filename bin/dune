@@ -1,4 +1,4 @@
 (executable
- (public_name sexp)
+ (public_name lisp)
  (name main)
- (libraries sexp parsexp base core stdio))
+ (libraries lisp stdio))
