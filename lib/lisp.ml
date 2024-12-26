@@ -26,8 +26,8 @@ let rec of_sexp = function
           | None -> (
               match s with
               | "real" -> Bool true
-              | "fake" -> Bool false
-              |  _ ->
+              | "cap" -> Bool false
+              | _ ->
                   if
                     String.length s > 2
                     && Char.equal (String.get s 0) '"'
@@ -327,7 +327,7 @@ let eval_string ctx str =
 let rec string_of_value = function
   | Integer n -> Int.to_string n
   | Float n -> Float.to_string n
-  | Bool b -> Bool.to_string b
+  | Bool b -> begin match b with | true -> "real" | false -> "cap" end
   | String s -> "'" ^ s ^ "'"
   | Symbol s -> s
   (* implement cons dumbass *)
@@ -382,8 +382,10 @@ let run_repl () =
             printf "\navailable commands:\n";
             printf "  :help  - show this help message\n";
             printf "  :wq - exit the repl\n";
-            printf "  :env (optional enviroment variable)  - show current environment\n";
-            printf "  :signature (optional variable)  - show current signature\n";
+            printf
+              "  :env (optional enviroment variable)  - show current environment\n";
+            printf
+              "  :signature (optional variable)  - show current signature\n";
             printf "\nexample expressions:\n";
             printf "  (+ 1 2)\n";
             printf "  (define x 42)\n";
@@ -402,13 +404,18 @@ let run_repl () =
                 printf "\ntype signature(s) for '%s': \n%s\n" key data);
             printf "\n";
             loop ()
-        | input when (String.length input > 5) && String.equal (String.sub input ~pos:0 ~len:5) ":env " ->
+        | input
+          when String.length input > 5
+               && String.equal (String.sub input ~pos:0 ~len:5) ":env " ->
             let key = String.sub input ~pos:5 ~len:(String.length input - 5) in
             (match Hashtbl.find env key with
             | Some v -> printf "%s: %s\n" key (string_of_value v)
             | None -> printf "'%s' not found in env\n" key);
             loop ()
-        | input when (String.length input > 11) && (String.equal (String.sub input ~pos:0 ~len:11)) ":signature " ->
+        | input
+          when String.length input > 11
+               && (String.equal (String.sub input ~pos:0 ~len:11)) ":signature "
+          ->
             let key =
               String.sub input ~pos:11 ~len:(String.length input - 11)
             in

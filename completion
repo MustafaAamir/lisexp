@@ -1,1 +1,1 @@
-define lamnda if cons car cdr list true false
+define if cons car cdr list true false map filter foldr foldl append
