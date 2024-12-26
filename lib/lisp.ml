@@ -363,6 +363,150 @@ let read_complete_expr () =
   read_lines true
 
 (* REPL main loop *)
+
+let help_message = "\
+Usage: lisexp [options] \
+
+ \
+
+A REPL for a Lisp dialect written in OCaml. \
+
+Commands: \
+
+  :env                - Prints all user-defined and built-in functions and variables\
+
+  :env <var>          - Prints the value of the specified variable <var> \
+
+  :signature          - Prints type signatures for all built-in functions\
+
+  :signature <name>   - Prints the type signature of the specified function <name> \
+
+  :help               - Displays this help message\
+
+  :wq                 - Exits the REPL \
+
+\
+
+Core Expressions: \
+
+  - Arithmetic: +, -, *, /, ^ (Exponentiation)\
+
+  - Comparison: >, <, >=, <=, = (for numbers and strings) \
+
+  - Type Predicates: integer?, float?, symbol?, string?, list?, nil?\
+
+  - Control Flow: if (<condition> <then> <else>) \
+
+\
+
+Example Expressions: \
+
+  > (+ 1 2)             => 3\
+
+  > (if (< 1 2) 1 0)    => 1 \
+
+  > (define x 42)       => 42\
+
+  > (define fact ($ (n) (if (= n 0) 1 (* n (fact (- n 1))))))  => <function λ> \
+
+\
+
+Lambda Functions: \
+
+  - Define a function using (define <name> ($ (<param>) (<body>)))\
+
+  - Example: \
+
+      > (define fact ($ (n) (if (= n 0) 1 (* n (fact (- n 1))))))\
+
+      => <function λ> \
+
+\
+
+Built-in Functions for Lists: \
+
+  - cons: Constructs a new list from an element and the rest of the list\
+
+  - car: Returns the first element of a list \
+
+  - cdr: Returns the rest of the list after the first element\
+
+  - append (&): Concatenates a list or adds an element to a list \
+
+  - length: Returns the length of a list\
+
+  - map: Applies a function to each element of a list \
+
+  - filter: Filters a list based on a predicate\
+
+  - foldl: Left fold \
+
+  - foldr: Right fold\
+
+  - sort_asc: Sorts a list in ascending order \
+
+  - sort_desc: Sorts a list in descending order\
+
+  - get: Retrieves an element from a list by index \
+
+  - set: Modifies an element in a list by index\
+
+ \
+
+Example List Operations:\
+
+  > (define x (cons 1 (cons 2 (cons 3 nil))))  => (1 2 3) \
+
+  > (car x)  => 1\
+
+  > (cdr x)  => (2 3) \
+
+  > (append 4 x)  => (1 2 3 4)\
+
+  > (length x)  => 3 \
+
+  > (map ($ (x) (+ x 1)) (@ 1 2 3))  => (2 3 4)\
+
+  > (filter ($ (x) (< x 10)) (@ 8 9 10 11 12))  => (8 9) \
+
+  > (foldl 0 (@ 1 2 3) ($ (x y) (+ x y)))  => 6\
+
+  > (sort_asc (@ 3 2 1))  => (1 2 3) \
+
+  > (get 0 (@ 1 2 3))  => 1\
+
+  > (set 0 (@ 1 2 3) 100)  => (100 2 3) \
+
+\
+Type Signatures: \
+
+  - Type signatures for built-in functions can be viewed using :signature <function_name>\
+
+  - Example: \
+
+      > :signature foldl\
+
+      => type signature(s) for 'foldl': 'a -> list 'a -> ('a -> 'a) -> 'a \
+
+\
+Notes: \
+
+  - The REPL supports basic Lisp-like syntax with arithmetic, comparison operators, and functions.\
+
+  - The environment (:env) and type signatures (:signature) commands allow you to inspect the available functions and variables. \
+
+  - Use (define) to create variables or functions.\
+
+  - Lambda functions are defined with ($ (<params>) <body>). \
+
+  - Control flow can be managed with if statements.\
+
+\
+Exit:\
+
+  - Type ':wq' to exit the REPL.\
+
+";;
 let run_repl () =
   let env, signature = create_initial_env () in
 
@@ -379,18 +523,7 @@ let run_repl () =
         | "" -> loop ()
         | ":wq" -> printf ":wq!\n"
         | ":help" ->
-            printf "\navailable commands:\n";
-            printf "  :help  - show this help message\n";
-            printf "  :wq - exit the repl\n";
-            printf
-              "  :env (optional enviroment variable)  - show current environment\n";
-            printf
-              "  :signature (optional variable)  - show current signature\n";
-            printf "\nexample expressions:\n";
-            printf "  (+ 1 2)\n";
-            printf "  (define x 42)\n";
-            printf "  (if (< 1 2) 10 20)\n";
-            printf "  (define incr ($ (x) (+ x 1)))\n\n";
+            print_endline help_message;
             loop ()
         | ":env" ->
             printf "\nCurrent environment:\n";
