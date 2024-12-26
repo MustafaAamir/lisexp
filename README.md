@@ -35,10 +35,11 @@ cap -> false
 
 ```
 λ> (1)
-=> 1
+=> Error: Not a function
+# because 1 isn't a function. (+ 1 1) is a function call ( + ) (1) (1)
 
 λ> 1
-Not a valid expression. All expressions must be wrapped in parentheses
+=> 1
 
 λ> (+ 1 1)
 => 2
@@ -97,7 +98,7 @@ Recursion:
 ```
 
 ## Builtins list functions:
-- List Operations: cons (conses a new list), car (returns the first element), cdr (returns the rest of the list after the first element), append (alias @) (concatenates lists or an element to a list), length (returns the length of a list), map, filter, foldl, foldr, sort_asc, sort_desc, get (retrieves an element by index), set (modifies an element at a specific index)
+- List Operations: cons (conses a new list), car (returns the first element), cdr (returns the rest of the list after the first element), append (alias &) (concatenates lists or an element to a list), length (returns the length of a list), map, filter, foldl, foldr, sort_asc, sort_desc, get (retrieves an element by index), set (modifies an element at a specific index)
 
 ```
 λ> (@ 1 2 3) # list constructor
@@ -115,7 +116,10 @@ Recursion:
 λ> (cdr x)
 => (2 3)
 
-λ> (append 4 x) #append 4 to the END of x
+λ> (append 4 x) # append 4 to the END of x
+=> (1 2 3 4)
+
+λ> (& 4 x) # append 4 to the END of x
 => (1 2 3 4)
 
 λ> (append (4 5 6) x)
@@ -141,6 +145,7 @@ Recursion:
 # ((1+2)+3) + 0
 λ> (foldr (@ 1 2 3) 0 ($ (x y) (+ x y)))
 => 6
+
 λ> (foldr (@ 1 2 3) 10 ($ (x y) (+ x y)))
 => 16
 
