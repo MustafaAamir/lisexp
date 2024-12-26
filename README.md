@@ -1,11 +1,12 @@
-# galisp (Great, Another LISP)
+# lisexp
+> REPL for a lisp dialect written in ocaml
 
-- REPL for a lisp dialect written in ocaml
-
-# Installation
+## Installation
 ```bash
 git clone https://github.com/MustafaAamir/lisexp
 cd lisexp
+opam switch create .
+opam install stdio base dune
 dune build
 # opam install parsexp sexplib core base dune
 dnf install rlwrap
@@ -97,7 +98,6 @@ Recursion:
 
 ## Builtins list functions:
 - List Operations: cons (conses a new list), car (returns the first element), cdr (returns the rest of the list after the first element), append (alias @) (concatenates lists or an element to a list), length (returns the length of a list), map, filter, foldl, foldr, sort_asc, sort_desc, get (retrieves an element by index), set (modifies an element at a specific index)
-
 
 ```
 λ> (@ 1 2 3) # list constructor
