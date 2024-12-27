@@ -199,6 +199,38 @@ integer a -> list 'a -> 'a -> list 'a
 
 λ> :wq #exit
 ```
+
+# Examples
+
+```lisp
+;; List constructor from s to e inclusive
+ λ> (define p ($ (s e)
+... >      (if (> s e)
+... >        nil
+... >        (cons s (p (+ s 1) e)))))
+=> <function λ>
+
+;; Sieve of Eratosthenes
+ λ> (define sv ($ (nlist)
+... >      (if (nil? nlist)
+... >        nil
+... >        (cons
+... >          (car nlist)
+... >          (sv
+... >            (filter
+... >              ($ (x) (<> 0 (% x (car nlist))))
+... >              (cdr nlist)))))))
+=> <function λ>
+
+;; main function
+ λ> (define primes
+... >   ($ (n)
+... >      (sv (p 2 n))))
+=> <function λ>
+
+ λ> (primes 100)
+=> (2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97)
+```
 ---
 
 ### TODO:

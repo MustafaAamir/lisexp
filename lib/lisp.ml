@@ -72,7 +72,7 @@ let create_initial_env () =
   in
   Hashtbl.set ctx ~key:"nil?" ~data:(Function nil_pred);
   Hashtbl.set signature ~key:"list?" ~data:"list 'a -> bool";
-
+  let fmod x y = Float.of_int (Int.rem (Int.of_float (x)) (Int.of_float (y)))in
   let add_primitive name int_op float_op =
     let bin = function
       | [ Float a; Float b ] -> Float (float_op a b)
@@ -130,6 +130,7 @@ let create_initial_env () =
   add_cmp ">=" Int.( >= ) Float.( >= );
   add_cmp "<=" Int.( <= ) Float.( <= );
   add_primitive "+" ( + ) ( +. );
+  add_primitive "%" ( Int.rem ) ( fmod );
   add_primitive "*" ( * ) ( *. );
   add_primitive "/" ( / ) ( /. );
   add_primitive "-" ( - ) ( -. );
