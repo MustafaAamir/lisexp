@@ -241,4 +241,5 @@ integer a -> list 'a -> 'a -> list 'a
 5. <then> block in if statement doesn't work w parens
 6. write unit tests using ounit2
 7. Delete disgusting parser hack to return "\"" ^ symbol ^ "\""
+8. Implement Hindley-Milner Type System
 

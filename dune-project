@@ -18,7 +18,7 @@
  (name lisp)
  (synopsis "A lisp interpreter")
  (description "")
- (depends ocaml base dune ocamlformat stdio )
+ (depends ocaml base dune ocamlformat stdio)
  (tags
   ("add topics" "to describe" your project)))
 

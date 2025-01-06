@@ -1,5 +1,5 @@
 (library
  (name lisp)
  (public_name lisp)
- (modules lisp parser)
+ (modules lisp parser typing)
  (libraries base stdio))
