@@ -1,5 +1,6 @@
 (library
  (name lisp)
  (public_name lisp)
- (modules lisp parser typing)
- (libraries base stdio))
+ (modules interpreter parser types type_checker)
+ (libraries base stdio)
+ (wrapped true))

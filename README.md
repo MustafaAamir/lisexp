@@ -242,4 +242,6 @@ integer a -> list 'a -> 'a -> list 'a
 6. write unit tests using ounit2
 7. Delete disgusting parser hack to return "\"" ^ symbol ^ "\""
 8. Implement Hindley-Milner Type System
+9. Emit x86_64 asm - reduce dependence on ocaml builtins and distill complex operators like foldr and map to basic lisp constructs.
+10. Unrolling of list operations
 

@@ -1,6 +1,6 @@
-open Lisp
+open Lisp.Interpreter
+open Lisp.Types
 open OUnit2
-open Base
 
 (* Helper functions for testing *)
 let test_eval env input expected =
@@ -8,7 +8,7 @@ let test_eval env input expected =
   assert_equal ~printer:string_of_value expected result
 ;;
 
-let setup_test_env () = fst (create_initial_env ())
+let setup_test_env () = create_initial_env ()
 
 (* Test Suites *)
 let value_tests =
